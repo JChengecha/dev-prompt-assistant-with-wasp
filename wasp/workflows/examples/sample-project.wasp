@@ -1,0 +1,126 @@
+app TaskManagementApp {
+  title: "Enterprise Task Management Platform",
+  
+  auth: {
+    methods: {
+      email: {},
+      google: {},
+      github: {}
+    },
+    userEntity: User,
+    onAuthFailedRedirectTo: "/login"
+  }
+}
+
+// User entity with extended profile
+entity User {=psl
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  name         String
+  role         UserRole  @default(MEMBER)
+  tasks        Task[]
+  createdAt    DateTime  @default(now())
+  lastLogin    DateTime?
+=psl}
+
+// Enum for user roles
+enum UserRole {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+// Task entity with rich metadata
+entity Task {=psl
+  id           Int       @id @default(autoincrement())
+  title        String
+  description  String?
+  status       TaskStatus @default(TODO)
+  priority     TaskPriority @default(MEDIUM)
+  dueDate      DateTime?
+  assignedTo   User?     @relation(fields: [assignedToId], references: [id])
+  assignedToId Int?
+  createdBy    User      @relation(fields: [createdById], references: [id])
+  createdById  Int
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+=psl}
+
+// Task status enum
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+// Task priority enum
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Main dashboard route
+route DashboardRoute { 
+  path: "/dashboard", 
+  component: Dashboard 
+}
+
+// Authentication routes
+route LoginRoute {
+  path: "/login",
+  component: Login
+}
+
+route SignupRoute {
+  path: "/signup",
+  component: Signup
+}
+
+// Server Actions for Task Management
+action createTask {
+  fn: import { createTask } from "@server/actions.js",
+  entities: [Task, User]
+}
+
+action updateTaskStatus {
+  fn: import { updateTaskStatus } from "@server/actions.js",
+  entities: [Task]
+}
+
+// Queries for fetching data
+query getTasks {
+  fn: import { getTasks } from "@server/queries.js",
+  entities: [Task]
+}
+
+query getUserProfile {
+  fn: import { getUserProfile } from "@server/queries.js",
+  entities: [User]
+}
+
+// Deployment and Environment Configuration
+dependency "@prisma/client" {
+  version: "5.x"
+}
+
+dependency "react" {
+  version: "18.x"
+}
+
+dependency "react-router-dom" {
+  version: "6.x"
+}
+
+// Additional configuration
+config {
+  db: {
+    system: "postgresql"
+  },
+  server: {
+    port: 3000,
+    hostname: "localhost"
+  }
+}
